@@ -1,0 +1,57 @@
+.chat-box {
+  width: 100%;
+  height: 250px;
+  border: 1px solid grey;
+  border-radius: 3px;
+  padding: 5px;
+  overflow: scroll;
+}
+
+.bubble-group {
+  margin-top: 5px;
+}
+
+
+
+.bubble-container {
+  display: table;
+  width: 100%;
+}
+
+
+.bubble {
+  display: table;
+  border-radius: 10px;
+  padding: 3px 10px;
+  text-align: left;
+  clear: both;
+  max-width: 60%;
+  margin-top:1px;
+}
+
+.bubble-right {
+  border-bottom-right-radius: 0px !important;
+  background-color: rgb(52, 121, 183);
+  color: white;
+  float: right;
+}
+
+.bubble-left {
+  border-bottom-left-radius: 0px !important;
+  text-align: left;
+  background-color: #e7e7e7;
+}
+
+.name {
+  font-size:8pt;
+  margin: 0;
+  color: grey;
+}
+
+.name-left {
+  text-align: left;
+}
+
+.name-right {
+  text-align: right;
+}
