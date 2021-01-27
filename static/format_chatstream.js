@@ -29,7 +29,7 @@ function format_chatstream(chatstream, self) {
     for (let chat of group.chats) {
       let bubble_container = document.createElement('div'); bubble_container.classList.add('bubble-container');
       let bubble = document.createElement('div'); bubble.classList.add('bubble');
-      bubble.innerHTML = chat.message;
+      bubble.appendChild(document.createTextNode(chat.message));
 
       if (chat.sender_id == self) {
         bubble.classList.add('bubble-right');
