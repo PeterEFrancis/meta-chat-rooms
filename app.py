@@ -6,7 +6,6 @@ import random
 import html
 import os
 import sys
-import numpy as np
 import random as r
 import json
 import random
