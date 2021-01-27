@@ -830,7 +830,7 @@ def session_in_room(room_id):
 #  \__,_|\__,_|_| |_| |_|_|_| |_|
 
 
-@app.route('/initialize')
+# @app.route('/initialize')
 def initialize():
     db.drop_all()
     db.create_all()

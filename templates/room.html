@@ -157,15 +157,11 @@
       <!-- name title -->
       <div class="row" style="margin-bottom: 30px">
         <div class="col-md-12">
-          <h1>
-            <div class="input-group">
-              <input class="form-control" id="name" value="{{room_name}}" placeholder="Room Name" oninput="this.value=alphanum_only(this.value)" onchange="change_room_name()" style="font-size: 30px; height: 1.54em;"></input>
-              <span class="input-group-btn">
-                <button class="btn btn-info btn-lg input-group-button" data-toggle="modal" data-target="#join-modal">
-                  Share <span class="glyphicon glyphicon-share"></span>
-                </button>
-              </span>
-            </div>
+          <h1>Room #{{room_id}}
+            <button class="btn btn-info input-group-button" data-toggle="modal" data-target="#join-modal">
+              Share <span class="glyphicon glyphicon-share"></span>
+            </button>
+            <input id="name" value="{{room_name}}" placeholder="Room Name" oninput="this.value=alphanum_only(this.value)" onchange="change_room_name()" style="display: block; margin-top:10px;"></input>
           </h1>
 
           <div class="material-switch">
