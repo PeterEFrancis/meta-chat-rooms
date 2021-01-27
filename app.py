@@ -22,8 +22,8 @@ from flask_socketio import SocketIO, send, join_room, leave_room
 app = Flask(__name__)
 app.secret_key = "ZpWNmtZBqTeLrJu6SWx6BueHGKWYxfD4fLz7CKTfcerZj4ffVhEG"
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://localhost/meta-chat-rooms'
-# heroku = Heroku(app)
+# app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://localhost/meta-chat-rooms'
+heroku = Heroku(app)
 app.config['SECRET_KEY'] = 'secret!'
 
 
