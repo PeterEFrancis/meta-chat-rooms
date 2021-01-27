@@ -22,6 +22,11 @@
     <!-- from https://github.com/davidshimjs/qrcodejs with the MIT license -->
     <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
 
+    <!-- codemirror -->
+    <script src="/static/ext/codemirror/lib/codemirror.js"></script>
+    <link rel="stylesheet" href="/static/ext/codemirror/lib/codemirror.css">
+
+
     <script src="/static/format_chatstream.js"></script>
     <link rel="stylesheet" href="/static/format_chatstream.css">
 
@@ -145,6 +150,16 @@
         padding: 0px;
       }
 
+
+      .CodeMirror {
+        height: 100%;
+        border: 1px solid #ccc;
+      }
+
+      .code-div.focused .CodeMirror {
+        border: 1px solid #02b1fc;
+      }
+
     </style>
   </head>
   <body>
@@ -233,8 +248,11 @@
       <div class="row" style="margin-top:50px">
         <div class="col-md-12">
           <h3>Custom HTML</h3>
-          <textarea id="custom-html" onchange="change_custom_html()" placeholder="custom html" style="width: 100%; height: 100%;"></textarea>
+          <div id="custom-html"></div>
         </div>
+      </div>
+      <div class="row">
+        <div id="custom-html-output" class="col-md-12"></div>
       </div>
 
 
@@ -423,12 +441,34 @@
       });
     }
 
+    let textarea = document.getElementById('custom-html');
+    let cm = CodeMirror(function(elt) {
+      textarea.parentNode.replaceChild(elt, textarea);
+    }, {
+      value: "",
+      mode: "html",
+      lineNumbers: true,
+      tabSize: 4,
+      autofocus: false
+    });
+    let last = "";
+    cm._handlers = {
+      blur: [
+        function() {
+          if (last != cm.getValue()) {
+            last = cm.getValue();
+            change_custom_html();
+          }
+        }
+      ]
+    }
+
     function change_custom_html() {
       $.ajax({
         url: '/host_access/change_custom_html',
         data: {
           'room_id':'{{ room_id }}',
-          'custom_html':document.getElementById('custom-html').value
+          'custom_html':cm.getValue()
         },
         type: 'POST',
         cache: false,
@@ -453,7 +493,8 @@
         cache: false,
         success: function(response) {
           if (response.success == 'true') {
-            document.getElementById('custom-html').innerHTML = response.custom_html;
+            cm.setValue(response.custom_html);
+            document.getElementById('custom-html-output').innerHTML = response.custom_html;
           } else {
             console.log(response);
           }
@@ -658,6 +699,7 @@
     }
 
 
+
     var socket = io({transports: ['websocket']});
 
     socket.on('connect', function() {
@@ -693,7 +735,6 @@
     update_custom_html();
     // changes to pods (players)
     socket.on('update custom_html', function(msg) {
-      console.log('here')
       update_custom_html();
     });
 
