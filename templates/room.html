@@ -460,6 +460,14 @@
             change_custom_html();
           }
         }
+      ],
+      change: [
+        function() {
+          if (cm.getValue() == "") {
+            last = cm.getValue();
+            change_custom_html();
+          }
+        }
       ]
     }
 
