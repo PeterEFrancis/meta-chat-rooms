@@ -26,6 +26,9 @@
     <script src="/static/ext/codemirror/lib/codemirror.js"></script>
     <link rel="stylesheet" href="/static/ext/codemirror/lib/codemirror.css">
 
+    <!-- FileSaver -->
+    <script src="/static/ext/FileSaver.js"></script>
+
 
     <script src="/static/format_chatstream.js"></script>
     <link rel="stylesheet" href="/static/format_chatstream.css">
@@ -35,9 +38,17 @@
     </title>
     <link href="https://fonts.googleapis.com/css?family=Ubuntu:400&display=swap" rel="stylesheet">
     <style>
+
+      .background-fade {
+        background-color: #fff;
+        background-color: rgba(255,255,255,0.85);
+        padding: 5px;
+        border-radius: 5px;
+        display: table;
+      }
+
       body {
         min-width: 360px;
-        background-color: white;
         margin-bottom: 100px
       }
 
@@ -160,6 +171,13 @@
         border: 1px solid #02b1fc;
       }
 
+      .recipient {
+        -webkit-border-radius: 0px;
+        border-radius: 0px;
+        border: 0;
+        height: 32px;
+      }
+
     </style>
   </head>
   <body>
@@ -172,17 +190,17 @@
       <!-- name title -->
       <div class="row" style="margin-bottom: 30px">
         <div class="col-md-12">
-          <h1>Room #{{room_id}}
+          <h1 class="background-fade">Room #{{room_id}}
             <button class="btn btn-info input-group-button" data-toggle="modal" data-target="#join-modal">
               Share <span class="glyphicon glyphicon-share"></span>
             </button>
             <input id="name" value="{{room_name}}" placeholder="Room Name" oninput="this.value=alphanum_only(this.value)" onchange="change_room_name()" style="display: block; margin-top:10px;"></input>
           </h1>
 
-          <div class="material-switch">
+          <div class="material-switch background-fade">
             <input id="allow-join" name="allow-join" type="checkbox" onclick='set_open(this.checked ? "1" : "0")'/>
             <label for="allow-join" class="label-info"></label>
-            <p id="room-state" style="user-select: none">Room {% if open %} open {% else %} closed {% endif %}</p>
+            <p id="room-state" style="user-select: none; margin-bottom: 0px;">Room {% if open %} open {% else %} closed {% endif %}</p>
           </div>
         </div>
       </div>
@@ -217,10 +235,26 @@
       <!-- chat -->
       <div class="row">
         <div class="col-md-12">
-          <h3>Chat</h3>
+          <div class="row">
+            <div class="col-xs-6">
+              <h3 class="background-fade" style="margin-top: 0px;">Chat</h3>
+            </div>
+            <div class="col-xs-6">
+              <button id="download-chat" class="btn btn-warning"
+                      style="display: inline-block; float:right; margin-top: 2px;">
+                Download
+                <span class="glyphicon glyphicon-download"></span>
+              </button>
+            </div>
+          </div>
           <div id="chat"></div>
           <div class="input-group">
             <input id="message" class="form-control" oninput="disable()" style="overflow-wrap: break-word" autofocus>
+            <span class="input-group-addon" style="padding: 0px;">
+              <select id="recipient" class="btn recipient" type="button" onchange="this.style.border= this.value == 'everyone' ? '0' : '1px solid red';">
+                <option value="everyone" name="everyone" selected>Everyone</option>
+              </select>
+            </span>
             <span class="input-group-btn">
               <button id="send" class="btn btn-primary" type="button" onclick="send()" disabled>
                 Send <span class="glyphicon glyphicon-send" aria-hidden="true"></span>
@@ -233,9 +267,9 @@
       <!-- Pods -->
       <div class="row" style="margin-top:50px">
         <div class="col-md-12">
-          <h3>
+          <h3 class="background-fade">
             Pods
-            <button onclick="new_pod()" class="btn btn-link">
+            <button onclick="new_pod()" style="padding: 0 0 0 5px" class="btn btn-link">
               <span class="glyphicon glyphicon-plus"></span>
             </button>
           </h3>
@@ -247,7 +281,7 @@
       <!-- custom HTML -->
       <div class="row" style="margin-top:50px">
         <div class="col-md-12">
-          <h3>Custom HTML</h3>
+          <h3 class="background-fade">Custom HTML</h3>
           <div id="custom-html"></div>
         </div>
       </div>
@@ -339,7 +373,9 @@
             'room_id':'{{ room_id }}',
             'message':message,
             'sender_id':'room-{{room_id}}',
-            'sender_name':'host ({{username}})'
+            'sender_name':'host ({{username}})',
+            'recipient_id':document.getElementById('recipient').value,
+            'recipient_name':$('#recipient').find('option:selected').attr("name")
           },
           async:true,
           type: 'POST',
@@ -360,6 +396,7 @@
         url: '/room_access/get_room_chatstream',
         data: {
           'room_id':'{{ room_id }}',
+          'id':'room-{{room_id}}'
         },
         async:true,
         type: 'POST',
@@ -367,9 +404,16 @@
         success: function(response) {
           if (response.success == 'true') {
             document.getElementById('chat').innerHTML = "";
-            let chat_box = format_chatstream(response.chatstream, 'room-{{room_id}}');
+            let [chat_box, text] = format_chatstream(
+              response.chatstream,
+              'room-{{room_id}}' // sender_id
+            );
             document.getElementById('chat').appendChild(chat_box);
             chat_box.scroll(0,999999);
+            const t = text;
+            document.getElementById('download-chat').onclick = function() {
+              SaveAsFile(t, 'Room #{{room_id}} ' + (new Date().toUTCString()) + '.txt')
+            }
           } else {
             console.log(response)
           }
@@ -536,7 +580,7 @@
 
     function update_pods() {
       $.ajax({
-        url: '/host_access/get_pod_dict',
+        url: '/room_access/get_pod_dict',
         data: {
           'room_id':'{{ room_id }}'
         },
@@ -545,6 +589,7 @@
         success: function(response) {
           if (response.success == 'true') {
             document.getElementById('pods').innerHTML = "";
+            // pod blocks
             for (let pod_id in response.pods.dict) {
               let col = document.createElement('div'); col.classList.add('col-sm-4');
               let panel = document.createElement('div'); panel.classList.add('panel', 'panel-default');
@@ -593,7 +638,7 @@
                   if (pod_id != pid) {
                     let option = document.createElement('option');
                     option.value = pid;
-                    option.innerHTML = response.pods.dict[pid].name + " (" + pid + ")"
+                    option.innerHTML = response.pods.dict[pid].name + " (#" + pid + ")"
                     select.appendChild(option);
                   }
                 }
@@ -613,6 +658,15 @@
 
                 ul.appendChild(li);
               }
+            }
+            // send modes
+            document.getElementById('recipient').innerHTML = '<option value="everyone" name="everyone" selected>Everyone</option>';
+            for (let pod_id in response.pods.dict) {
+              let option = document.createElement('option');
+              option.value = 'pod-' + pod_id;
+              option.innerHTML = response.pods.dict[pod_id].name;
+              option.setAttribute('name', response.pods.dict[pod_id].name);
+              document.getElementById('recipient').appendChild(option);
             }
           } else {
             console.log(response);

@@ -21,14 +21,25 @@
     <script src="/static/format_chatstream.js"></script>
     <link rel="stylesheet" href="/static/format_chatstream.css">
 
+    <!-- FileSaver -->
+    <script src="/static/ext/FileSaver.js"></script>
+
 
     <title>
       Meta Chat Rooms | {{playername}}
     </title>
     <link href="https://fonts.googleapis.com/css?family=Ubuntu:400&display=swap" rel="stylesheet">
     <style>
+
+      .background-fade {
+        background-color: #fff;
+        background-color: rgba(255,255,255,0.85);
+        padding: 5px;
+        border-radius: 5px;
+        display: table;
+      }
+
       body {
-        background-color: white;
         min-width: 300px;
       }
 
@@ -36,6 +47,13 @@
         width: 100%;
         height: 250px;
         resize: none;
+      }
+
+      .recipient {
+        -webkit-border-radius: 0px;
+        border-radius: 0px;
+        border: 0;
+        height: 32px;
       }
 
     </style>
@@ -54,9 +72,9 @@
         </div>
         <div class="col-xs-6 text-right">
           {% if pod_name != 'unassigned' %}
-          <button type="button" class="btn btn-warning btn-xs" onclick="leave_pod()">Leave Pod</button>
+          <button type="button" class="btn btn-warning" onclick="leave_pod()">Leave Pod</button>
           {% endif %}
-          <button type="button" class="btn btn-danger btn-xs" onclick="leave_room()">Leave Room</button>
+          <button type="button" class="btn btn-danger" onclick="leave_room()">Leave Room</button>
         </div>
       </div>
 
@@ -66,7 +84,7 @@
     <div class="container">
       <div class="row">
         <div class="col-md-12">
-          <h1>{{ playername }}<span style="color:lightgrey">@<span id="room-name"></span>/<span id="pod-name"></span></span></h1>
+          <h1 style="word-break: break-all" class="background-fade">{{ playername }}<span style="color:grey">@<span id="room-name"></span>/<span id="pod-name"></span></span></h1>
         </div>
       </div>
 
@@ -75,10 +93,27 @@
       <!-- room chat -->
       <div class="row">
         <div class="col-md-12">
-          <h3>Room Chat</h3>
+          <div class="row">
+            <div class="col-xs-6">
+              <h3 class="background-fade" style="margin-top: 0px;">Room Chat</h3>
+            </div>
+            <div class="col-xs-6">
+              <button id="download-room-chat" class="btn btn-warning"
+                      style="display:inline-block; float:right; margin-top:2px;">
+                Download
+                <span class="glyphicon glyphicon-download"></span>
+              </button>
+            </div>
+          </div>
           <div id="room-chat"></div>
           <div class="input-group">
             <input id="room-message" class="form-control" oninput="disable_room_send()" autofocus>
+            <span class="input-group-addon" style="padding: 0px;">
+              <select id="room-recipient" class="btn recipient" type="button" onchange="this.style.border= this.value == 'everyone' ? '0' : '1px solid red';">
+                <option value="everyone" name="everyone" selected>Everyone</option>
+                <option value="room-{{room_id}}" name="host">Host</option>
+              </select>
+            </span>
             <span class="input-group-btn">
               <button id="room-send" class="btn btn-primary" type="button" onclick="room_send()" disabled>
                 Send <span class="glyphicon glyphicon-send" aria-hidden="true"></span>
@@ -89,12 +124,28 @@
       </div>
 
       <!-- pod chat -->
-      <div class="row">
+      <div class="row" style="margin-top: 30px;">
         <div class="col-md-12">
-          <h3>Pod Chat</h3>
+          <div class="row">
+            <div class="col-xs-6">
+              <h3 class="background-fade" style="margin-top: 0px;">Pod Chat</h3>
+            </div>
+            <div class="col-xs-6">
+              <button id="download-pod-chat" class="btn btn-warning"
+                      style="display: inline-block; float:right; margin-top: 2px;">
+                Download
+                <span class="glyphicon glyphicon-download"></span>
+              </button>
+            </div>
+          </div>
           <div id="pod-chat"></div>
           <div class="input-group">
             <input id="pod-message" class="form-control" oninput="disable_pod_send()" autofocus>
+            <span class="input-group-addon" style="padding: 0px;">
+              <select id="pod-recipient" class="btn recipient" type="button" onchange="this.style.border= this.value == 'everyone' ? '0' : '1px solid red';">
+                <option value="everyone" name="everyone" selected>Everyone</option>
+              </select>
+            </span>
             <span class="input-group-btn">
               <button id="pod-send" class="btn btn-primary" type="button" onclick="pod_send()" disabled>
                 Send <span class="glyphicon glyphicon-send" aria-hidden="true"></span>
@@ -106,7 +157,8 @@
 
       <div class="row">
         <div class="col-md-12">
-
+          <h3 class="background-fade">Players</h3>
+          <ul id="player-list" class="background-fade" style="padding-left: 25px"></ul>
         </div>
       </div>
     </div>
@@ -208,7 +260,9 @@
               'room_id':'{{ room_id }}',
               'message':message,
               'sender_id':'pod-{{pod_id}}',
-              'sender_name':'{{pod_name}}'
+              'sender_name':'{{pod_name}}',
+              'recipient_id':document.getElementById('room-recipient').value,
+              'recipient_name':$('#room-recipient').find('option:selected').attr("name")
             },
             async:true,
             type: 'POST',
@@ -233,6 +287,7 @@
           url: '/room_access/get_room_chatstream',
           data: {
             'room_id':'{{ room_id }}',
+            'id':'pod-{{pod_id}}'
           },
           async: true,
           type: 'POST',
@@ -240,9 +295,16 @@
           success: function(response) {
             if (response.success == 'true') {
               document.getElementById('room-chat').innerHTML = "";
-              let chat_box = format_chatstream(response.chatstream, 'pod-{{pod_id}}');
+              let [chat_box, text] = format_chatstream(
+                response.chatstream,
+                'pod-{{pod_id}}'
+              );
               document.getElementById('room-chat').appendChild(chat_box);
               chat_box.scroll(0,999999);
+              const t = text;
+              document.getElementById('download-room-chat').onclick = function() {
+                SaveAsFile(t, 'Room #{{room_id}} ' + (new Date().toUTCString()) + '.txt')
+              }
             } else {
               console.log(response)
             }
@@ -289,6 +351,7 @@
               'room_id':'{{ room_id }}',
               'pod_id':'{{ pod_id }}',
               'message':message,
+              'recipient':document.getElementById('pod-recipient').value,
             },
             async: true,
             type: 'POST',
@@ -310,6 +373,7 @@
           data: {
             'room_id':'{{ room_id }}',
             'pod_id':'{{ pod_id }}',
+            'id':'{{ playername }}',
           },
           async:true,
           type: 'POST',
@@ -317,9 +381,13 @@
           success: function(response) {
             if (response.success == 'true') {
               document.getElementById('pod-chat').innerHTML = "";
-              let chat_box = format_chatstream(response.chatstream, '{{playername}}');
+              let [chat_box, text] = format_chatstream(response.chatstream, '{{playername}}');
               document.getElementById('pod-chat').appendChild(chat_box);
               chat_box.scroll(0,999999);
+              const t = text;
+              document.getElementById('download-pod-chat').onclick = function() {
+                SaveAsFile(t, 'Pod #{{pod_id}} ' + (new Date().toUTCString()) + '.txt')
+              }
             } else {
               console.log(response)
             }
@@ -332,6 +400,72 @@
 
       function disable_pod_send() {
         document.getElementById('pod-send').disabled = document.getElementById('pod-message').value.trim() == '';
+      }
+
+      function update_pods() {
+        $.ajax({
+          url: '/room_access/get_pod_dict',
+          data: {
+            'room_id':'{{ room_id }}'
+          },
+          type: 'POST',
+          cache: false,
+          success: function(response) {
+            if (response.success == 'true') {
+              // send modes
+              document.getElementById('room-recipient').innerHTML = '<option value="everyone" name="everyone" selected>Everyone</option><option value="room-{{room_id}}" name="host">Host</option>';
+              for (let pod_id in response.pods.dict) {
+                if (pod_id != '{{pod_id}}') {
+                  let option = document.createElement('option');
+                  option.value = 'pod-' + pod_id;
+                  option.innerHTML = response.pods.dict[pod_id].name;
+                  option.setAttribute('name', response.pods.dict[pod_id].name);
+                  document.getElementById('room-recipient').appendChild(option);
+                }
+              }
+            } else {
+              console.log(response);
+            }
+          },
+          error: function(error){
+            console.log(error);
+          }
+        });
+      }
+
+      function update_players() {
+        $.ajax({
+          url: '/room_access/get_players',
+          data: {
+            'room_id':'{{ room_id }}',
+            'pod_id':'{{ pod_id }}',
+          },
+          type: 'POST',
+          cache: false,
+          success: function(response) {
+            if (response.success == 'true') {
+              document.getElementById('player-list').innerHTML = "";
+              document.getElementById('pod-recipient').innerHTML = '<option value="everyone" name="everyone" selected>Everyone</option>';
+              for (let playername of response.players) {
+                let li = document.createElement('li');
+                li.innerHTML = playername;
+                document.getElementById('player-list').appendChild(li);
+                // send options
+                if (playername != '{{playername}}') {
+                  let option = document.createElement('option');
+                  option.value = playername;
+                  option.innerHTML = playername;
+                  document.getElementById('pod-recipient').appendChild(option);
+                }
+              }
+            } else {
+              console.log(response);
+            }
+          },
+          error: function(error){
+            console.log(error);
+          }
+        });
       }
 
 
@@ -381,6 +515,12 @@
         update_room_chat();
       });
 
+      // changes to pod
+      update_pods();
+      socket.on('update pods', function(msg) {
+        update_pods();
+      });
+
       // changes to pod chat
       update_pod_chat();
       socket.on('update pod chat', function(msg) {
@@ -388,9 +528,15 @@
       });
 
       update_custom_html();
-      // changes to pods (players)
+      // changes to custom html
       socket.on('update custom_html', function(msg) {
         update_custom_html();
+      });
+
+      update_players();
+      // changes to players
+      socket.on('update players', function(msg) {
+        update_players();
       });
 
     </script>

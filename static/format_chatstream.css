@@ -5,12 +5,13 @@
   border-radius: 3px;
   padding: 5px;
   overflow: scroll;
+  background-color: #fff;
+  background-color: rgba(255,255,255,0.85);
 }
 
 .bubble-group {
   margin-top: 5px;
 }
-
 
 
 .bubble-container {
@@ -39,7 +40,7 @@
 .bubble-left {
   border-bottom-left-radius: 0px !important;
   text-align: left;
-  background-color: #e7e7e7;
+  background-color: #cfcfcf; #e7e7e7;
 }
 
 .name {
@@ -54,4 +55,8 @@
 
 .name-right {
   text-align: right;
+}
+
+.private {
+  border: 1px solid red;
 }

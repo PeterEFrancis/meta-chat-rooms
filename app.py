@@ -128,12 +128,14 @@ class Room(db.Model):
 
     def get_chatstream(self):
         return eval(self.chatstream)
-    def send(self, sender_id, sender_name, message):
+    def send(self, sender_id, sender_name, message, recipient_id, recipient_name):
         cs = self.get_chatstream()
         cs.append({
             'sender_name': sender_name,
             'sender_id': sender_id,
             'message': message,
+            'recipient_id':recipient_id,
+            'recipient_name':recipient_name,
             'time': time.time()
         })
         self.chatstream = str(cs)
@@ -247,11 +249,13 @@ class Pod(db.Model):
             self.name = name
             db.session.commit()
 
-    def send(self, sender_id, sender_name, message):
+    def send(self, sender, recipient, message):
         cs = self.get_chatstream()
         cs.append({
-            'sender_name': sender_name,
-            'sender_id': sender_id,
+            'sender_id': sender,
+            'sender_name': sender,
+            'recipient_id': recipient,
+            'recipient_name': recipient,
             'message': message,
             'time': time.time()
         })
@@ -563,6 +567,7 @@ def join_chat_room():
 
     room.add_player(unassigned_id, request.form['player'])
     socketio.emit('update pods', room='room-'+room_id)
+    socketio.emit('update players', room='pod-'+pod_id)
     return jsonify({'success':'true', 'room_id':room_id})
 
 
@@ -580,6 +585,7 @@ def leave_room():
     session.pop('room', None)
     session.pop('pod', None)
     socketio.emit('update pods', room='room-' + room_id)
+    socketio.emit('update players', room='pod-'+pod_id)
     return jsonify({'success':'true'})
 
 
@@ -597,6 +603,7 @@ def leave_pod():
             session['room-' + room_id] = [room.unassigned_id, playername]
             session['pod'] = room.unassigned_id
     socketio.emit('update pods', room='room-' + room_id)
+    socketio.emit('update players', room='pod-'+pod_id)
     return jsonify({'success':'true'})
 
 
@@ -627,9 +634,27 @@ def room_access(function):
     room = get_room(request.form['room_id'])
 
     if function == "get_room_chatstream":
-        return jsonify({'success':'true', 'chatstream':room.get_chatstream()})
+        id = request.form['id']
+        return jsonify({
+            'success':'true',
+            'chatstream':list(
+                filter(
+                    lambda chat :
+                        chat['recipient_id'] == 'everyone'
+                        or chat['recipient_id'] == id
+                        or chat['sender_id'] == id,
+                    room.get_chatstream()
+                )
+            )
+        })
     elif function == 'room_send':
-        room.send(request.form['sender_id'], request.form['sender_name'], request.form['message'])
+        room.send(
+            sender_id=request.form['sender_id'],
+            sender_name=request.form['sender_name'],
+            message=request.form['message'],
+            recipient_id=request.form['recipient_id'],
+            recipient_name=request.form['recipient_name']
+        )
         socketio.emit('update room chat', room='room-'+room_id)
         return jsonify({'success':'true'})
     elif function == "get_room_name":
@@ -638,6 +663,8 @@ def room_access(function):
         return jsonify({'success':'true', 'name':get_pod(session['room-' + room_id][0]).name})
     elif function == "get_custom_html":
         return jsonify({'success':'true', 'custom_html':room.custom_html})
+    elif function == "get_pod_dict":
+        return jsonify({'success':'true', 'pods':room.get_pod_dict()})
 
     # pod id supplied
     if 'pod_id' in request.form:
@@ -651,11 +678,29 @@ def room_access(function):
 
         if function == "pod_send":
             p, playername = session['room-' + room_id]
-            pod.send(playername, playername, request.form['message'])
+            pod.send(
+                sender=playername,
+                recipient=request.form['recipient'],
+                message=request.form['message']
+            )
             socketio.emit('update pod chat', room='pod-'+pod_id)
             return jsonify({'success':'true'})
         elif function == "get_pod_chatstream":
-            return jsonify({'success':'true', 'chatstream':pod.get_chatstream()})
+            id = request.form['id']
+            return jsonify({
+                'success':'true',
+                'chatstream':list(
+                    filter(
+                        lambda chat :
+                            chat['recipient_id'] == 'everyone'
+                            or chat['recipient_id'] == id
+                            or chat['sender_id'] == id,
+                        pod.get_chatstream()
+                    )
+                )
+            })
+        elif function == "get_players":
+            return jsonify({'success':'true', 'players':pod.get_players()})
 
 
     return jsonify({'success':'false', 'error':"The function you tried to access doesn't exist."})
@@ -675,9 +720,7 @@ def host_access(function):
     if (not get_user(session['username']).has_room(room_id)) and session['username'] != 'admin':
         return jsonify({'success':'false', 'error':"You don't have access to edit this game."})
 
-    if function == "get_pod_dict":
-        return jsonify({'success':'true', 'pods':room.get_pod_dict()})
-    elif function == "get_open":
+    if function == "get_open":
         return jsonify({'success':'true', 'open':room.open})
     elif function == "set_open":
         room.set_open(bool(int(request.form['open'])))
@@ -724,6 +767,8 @@ def host_access(function):
                 'link':f'/room/{room_id}/pod/{pod_id}'
             }, room='pod-'+old_pod_id)
             socketio.emit('update pods', room='room-'+room_id)
+            socketio.emit('update players', room='pod-'+old_pod_id)
+            socketio.emit('update players', room='pod-'+pod_id)
             return jsonify({'success':'true'})
         elif function == "delete_pod":
             players = pod.get_players()
@@ -741,6 +786,7 @@ def host_access(function):
                 'link':'/'
             }, room='pod-'+pod_id)
             socketio.emit('update pods', room='room-'+room_id)
+            socketio.emit('update players', room='pod-'+pod_id)
             return jsonify({'success':'true'})
 
     return jsonify({'success':'false', 'error':"The function you tried to access doesn't exist."})
@@ -830,7 +876,7 @@ def session_in_room(room_id):
 #  \__,_|\__,_|_| |_| |_|_|_| |_|
 
 
-# @app.route('/initialize')
+@app.route('/initialize')
 def initialize():
     db.drop_all()
     db.create_all()
@@ -874,100 +920,6 @@ def admin(s):
     return 'Access denied.', 403
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-@app.route('/leave_game', methods=['POST'])
-def leave_game():
-    code = request.form['code']
-    game = get_game(code)
-    if 'player-' + code in session:
-        player = session['player-' + code]
-        if game.has_player(player):
-            game.remove_player(player)
-        session.pop('player-' + code, None)
-    socketio.emit('update players', room='game-'+code)
-    return jsonify({'success':'true'})
-
-
-@socketio.on('leave game room')
-def leave_game_room(data):
-    leave_room('player-' + data['code'])
 
 
 
