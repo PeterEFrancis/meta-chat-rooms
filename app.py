@@ -21,8 +21,8 @@ from flask_socketio import SocketIO, send, join_room, leave_room
 app = Flask(__name__)
 app.secret_key = "ZpWNmtZBqTeLrJu6SWx6BueHGKWYxfD4fLz7CKTfcerZj4ffVhEG"
 
-# app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://localhost/meta-chat-rooms'
-heroku = Heroku(app)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://localhost/meta-chat-rooms'
+# heroku = Heroku(app)
 app.config['SECRET_KEY'] = 'secret!'
 
 
@@ -554,10 +554,10 @@ def join_chat_room():
     if not room.open:
         return jsonify({'success':'false', 'error':'This room is not open to be joined.'})
     pod_id = 0
-    if session_in_room(room_id) and room.has_player(playername):
-        return jsonify({'success':'false', 'error':f'You are already in this room with name <u>{playername}</u>.<br><br>Click <a href="/room/{room_id}">here</a> to enter.'})
-
-    pod_id, playername = session['room-' + room_id]
+    if session_in_room(room_id):
+        pod_id, playername = session['room-' + room_id]
+        if room.has_player(playername):
+            return jsonify({'success':'false', 'error':f'You are already in this room with name <u>{playername}</u>.<br><br>Click <a href="/room/{room_id}">here</a> to enter.'})
 
     if room.has_player(request.form['player']):
         return jsonify({'success':'false', 'error':'This name is already in use. Try another!'})
@@ -568,7 +568,7 @@ def join_chat_room():
 
     room.add_player(unassigned_id, request.form['player'])
     socketio.emit('update pods', room='room-'+room_id)
-    socketio.emit('update players', room='pod-'+pod_id)
+    socketio.emit('update players', room='pod-'+unassigned_id)
     return jsonify({'success':'true', 'room_id':room_id})
 
 
