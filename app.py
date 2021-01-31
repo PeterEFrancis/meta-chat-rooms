@@ -553,10 +553,11 @@ def join_chat_room():
     room = get_room(room_id)
     if not room.open:
         return jsonify({'success':'false', 'error':'This room is not open to be joined.'})
-    if session_in_room(room_id):
-        pod_id, playername = session['room-' + room_id]
-        if room.has_player(playername):
-            return jsonify({'success':'false', 'error':f'You are already in this room with name <u>{playername}</u>.<br><br>Click <a href="/room/{room_id}">here</a> to enter.'})
+    pod_id = 0
+    if session_in_room(room_id) and room.has_player(playername):
+        return jsonify({'success':'false', 'error':f'You are already in this room with name <u>{playername}</u>.<br><br>Click <a href="/room/{room_id}">here</a> to enter.'})
+
+    pod_id, playername = session['room-' + room_id]
 
     if room.has_player(request.form['player']):
         return jsonify({'success':'false', 'error':'This name is already in use. Try another!'})
@@ -800,11 +801,6 @@ def host_access(function):
 
 
 
-@app.route('/session')
-def sess():
-    return "<style>table,th,tr,td{border: 1px solid black;}</style><table><tr><th colspan='2'>Session</th><tr>" + "</tr><tr>".join(f"<td>{el}</td><td>{session[el]}</td>" for el in session) + "</tr></table>"
-
-
 
 
 
@@ -848,6 +844,11 @@ def on_leave_room(data):
 # \__ |  __\__ \__ | | (_) | | | |
 # |___/\___|___|___|_|\___/|_| |_|
 
+
+
+@app.route('/session')
+def sess():
+    return "<style>table,th,tr,td{border: 1px solid black;}</style><table><tr><th colspan='2'>Session</th><tr>" + "</tr><tr>".join(f"<td>{el}</td><td>{session[el]}</td>" for el in session) + "</tr></table>"
 
 
 

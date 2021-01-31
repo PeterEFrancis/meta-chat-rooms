@@ -58,7 +58,7 @@
                  oninput = "this.value = number_only(this.value)"/>
           <br>
           <input id="player" class="form-control center-block text-center"
-                 placeholder="Name" style="width:200px" {% if code != "" %} autofocus {% endif %}
+                 placeholder="Name" style="width:200px" {% if room_id != "" %} autofocus {% endif %}
                  oninput = "this.value = lower_and_num_only(this.value)"/>
           <br>
           <p id="join-error" style="color:red">&nbsp;</p>
