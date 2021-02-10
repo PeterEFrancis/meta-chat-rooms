@@ -738,7 +738,7 @@
     var last;
 
 
-    $(document).ready(function(){
+    $(window).on('load', function(){
       textarea = document.getElementById('custom-html');
       cm = CodeMirror(function(elt) {
           textarea.parentNode.replaceChild(elt, textarea);
