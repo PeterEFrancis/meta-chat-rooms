@@ -279,7 +279,7 @@
 
 
       <!-- custom HTML -->
-      <div class="row" style="margin-top:50px">
+      <!-- <div class="row" style="margin-top:50px">
         <div class="col-md-12">
           <h3 class="background-fade">Custom HTML</h3>
           <div id="custom-html"></div>
@@ -287,7 +287,7 @@
       </div>
       <div class="row">
         <div id="custom-html-output" class="col-md-12"></div>
-      </div>
+      </div> -->
 
 
     </div>
@@ -739,41 +739,41 @@
 
 
     $(window).on('load', function(){
-      textarea = document.getElementById('custom-html');
-      cm = CodeMirror(function(elt) {
-          textarea.parentNode.replaceChild(elt, textarea);
-        }, {
-          value: "",
-          mode: "html",
-          lineNumbers: true,
-          tabSize: 4,
-          autofocus: false
-        }
-      );
-      last = "";
-      cm._handlers = {
-        blur: [
-          function() {
-            if (last != cm.getValue()) {
-              last = cm.getValue();
-              change_custom_html();
-            }
-          }
-        ],
-        change: [
-          function() {
-            if (cm.getValue() == "") {
-              last = cm.getValue();
-              change_custom_html();
-            }
-          }
-        ]
-      }
+      // textarea = document.getElementById('custom-html');
+      // cm = CodeMirror(function(elt) {
+      //     textarea.parentNode.replaceChild(elt, textarea);
+      //   }, {
+      //     value: "",
+      //     mode: "html",
+      //     lineNumbers: true,
+      //     tabSize: 4,
+      //     autofocus: false
+      //   }
+      // );
+      // last = "";
+      // cm._handlers = {
+      //   blur: [
+      //     function() {
+      //       if (last != cm.getValue()) {
+      //         last = cm.getValue();
+      //         change_custom_html();
+      //       }
+      //     }
+      //   ],
+      //   change: [
+      //     function() {
+      //       if (cm.getValue() == "") {
+      //         last = cm.getValue();
+      //         change_custom_html();
+      //       }
+      //     }
+      //   ]
+      // }
 
       update_chat();
       update_room_name();
       update_open();
-      update_custom_html();
+      // update_custom_html();
       update_pods();
     })
 
@@ -810,9 +810,9 @@
     });
 
     // changes to pods (players)
-    socket.on('update custom_html', function(msg) {
-      update_custom_html();
-    });
+    // socket.on('update custom_html', function(msg) {
+    //   update_custom_html();
+    // });
 
     // changes to pods (players)
     socket.on('update pods', function(msg) {
