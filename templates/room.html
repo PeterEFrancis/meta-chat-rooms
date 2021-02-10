@@ -733,9 +733,14 @@
     }
 
 
+    var cm;
+    var textarea;
+    var last;
+
+
     $(document).ready(function(){
-      let textarea = document.getElementById('custom-html');
-      let cm = CodeMirror(function(elt) {
+      textarea = document.getElementById('custom-html');
+      cm = CodeMirror(function(elt) {
           textarea.parentNode.replaceChild(elt, textarea);
         }, {
           value: "",
@@ -745,7 +750,7 @@
           autofocus: false
         }
       );
-      let last = "";
+      last = "";
       cm._handlers = {
         blur: [
           function() {
