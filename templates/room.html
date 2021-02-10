@@ -485,35 +485,7 @@
       });
     }
 
-    let textarea = document.getElementById('custom-html');
-    let cm = CodeMirror(function(elt) {
-      textarea.parentNode.replaceChild(elt, textarea);
-    }, {
-      value: "",
-      mode: "html",
-      lineNumbers: true,
-      tabSize: 4,
-      autofocus: false
-    });
-    let last = "";
-    cm._handlers = {
-      blur: [
-        function() {
-          if (last != cm.getValue()) {
-            last = cm.getValue();
-            change_custom_html();
-          }
-        }
-      ],
-      change: [
-        function() {
-          if (cm.getValue() == "") {
-            last = cm.getValue();
-            change_custom_html();
-          }
-        }
-      ]
-    }
+
 
     function change_custom_html() {
       $.ajax({
@@ -761,8 +733,50 @@
     }
 
 
+    $(document).ready(function(){
+      let textarea = document.getElementById('custom-html');
+      let cm = CodeMirror(function(elt) {
+          textarea.parentNode.replaceChild(elt, textarea);
+        }, {
+          value: "",
+          mode: "html",
+          lineNumbers: true,
+          tabSize: 4,
+          autofocus: false
+        }
+      );
+      let last = "";
+      cm._handlers = {
+        blur: [
+          function() {
+            if (last != cm.getValue()) {
+              last = cm.getValue();
+              change_custom_html();
+            }
+          }
+        ],
+        change: [
+          function() {
+            if (cm.getValue() == "") {
+              last = cm.getValue();
+              change_custom_html();
+            }
+          }
+        ]
+      }
+
+      update_chat();
+      update_room_name();
+      update_open();
+      update_custom_html();
+      update_pods();
+
+    })
+
 
     var socket = io({transports: ['websocket']});
+
+
 
     socket.on('connect', function() {
       console.log('connected to socketIO');
@@ -777,30 +791,25 @@
     });
 
     // changes to chat
-    update_chat();
     socket.on('update room chat', function(msg) {
       update_chat();
     });
 
     // changes to name
-    update_room_name();
     socket.on('update room name', function(msg) {
       update_room_name();
     });
 
     // changes to changes to open
-    update_open();
     socket.on('update open', function(msg) {
       update_open();
     });
 
-    update_custom_html();
     // changes to pods (players)
     socket.on('update custom_html', function(msg) {
       update_custom_html();
     });
 
-    update_pods();
     // changes to pods (players)
     socket.on('update pods', function(msg) {
       update_pods();

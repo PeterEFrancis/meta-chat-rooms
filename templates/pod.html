@@ -469,7 +469,15 @@
       }
 
 
-
+      $(document).ready(function() {
+        update_room_name();
+        update_pod_name();
+        update_room_chat();
+        update_pods();
+        update_pod_chat();
+        update_custom_html();
+        update_players();
+      });
 
 
       var socket = io({transports: ['websocket']});
@@ -498,42 +506,35 @@
 
 
       // changes to room name
-      update_room_name();
       socket.on('update room name', function(msg) {
         update_room_name();
       });
 
       // changes to pod name
-      update_pod_name();
       socket.on('update pod name', function(msg) {
         update_pod_name();
       });
 
       // changes to room chat
-      update_room_chat();
       socket.on('update room chat', function(msg) {
         update_room_chat();
       });
 
       // changes to pod
-      update_pods();
       socket.on('update pods', function(msg) {
         update_pods();
       });
 
       // changes to pod chat
-      update_pod_chat();
       socket.on('update pod chat', function(msg) {
         update_pod_chat();
       });
 
-      update_custom_html();
       // changes to custom html
       socket.on('update custom_html', function(msg) {
         update_custom_html();
       });
 
-      update_players();
       // changes to players
       socket.on('update players', function(msg) {
         update_players();
