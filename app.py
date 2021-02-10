@@ -30,6 +30,14 @@ socketio = SocketIO(app)
 
 
 
+@app.route('/static/<string:path>')
+def static_path(path):
+    return app.send_static_file(path)
+
+
+
+
+
 
 #      _       _        _
 #   __| | __ _| |_ __ _| |__   __ _ ___  ___
